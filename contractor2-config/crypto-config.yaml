@@ -1,0 +1,11 @@
+PeerOrgs:
+  - Name: contractor2
+    Domain: contractor2
+    EnableNodeOUs: true
+    Specs:
+      - Hostname: contractor2_peer1
+        CommonName: contractor2_peer1
+      - Hostname: contractor2_peer2
+        CommonName: contractor2_peer2
+    Users:
+      Count: 1

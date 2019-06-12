@@ -1,0 +1,9 @@
+Organizations:
+    - &contractor2
+        Name: contractor2
+        ID: contractor2
+        MSPDir: crypto-config/peerOrganizations/contractor2/msp
+        AnchorPeers:
+            - Host: contractor2_peer1
+              Port: 7051
+

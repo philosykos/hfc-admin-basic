@@ -1,0 +1,207 @@
+#
+# Copyright IBM Corp All Rights Reserved
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+version: '2'
+
+networks:
+  poc:
+
+services:
+  chainz_orderer1:
+    container_name: chainz_orderer1
+    image: hyperledger/fabric-orderer
+    environment:
+      - FABRIC_LOGGING_SPEC=info
+      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+      - ORDERER_GENERAL_GENESISMETHOD=file
+      - ORDERER_GENERAL_GENESISFILE=/etc/hyperledger/configtx/genesis.block
+      - ORDERER_GENERAL_LOCALMSPID=chainz
+      - ORDERER_GENERAL_LOCALMSPDIR=/etc/hyperledger/msp/orderer/msp
+      # - ORDERER_OPERATIONS_LISTENADDRESS=chainz_orderer1:8443
+      # - ORDERER_METRICS_PROVIDER=prometheus
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric/orderer
+    command: orderer
+    ports:
+      - 7050:7050
+      # - 6443:8443
+    volumes:
+      - ./config/:/etc/hyperledger/configtx
+      - ./crypto-config/ordererOrganizations/chainz/orderers/chainz_orderer1/msp:/etc/hyperledger/msp/orderer/msp
+      - ./crypto-config/ordererOrganizations/chainz/orderers/chainz_orderer1/tls:/etc/hyperledger/msp/orderer/tls
+      # - ./poc-network/chainz-orderer1:/var/hyperledger/production/orderer
+    networks:
+      - poc
+
+  skcc_peer1:
+    container_name: skcc_peer1
+    image: hyperledger/fabric-peer
+    environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_PEER_ID=skcc_peer1
+      - FABRIC_LOGGING_SPEC=info
+      - CORE_CHAINCODE_LOGGING_LEVEL=info
+      - CORE_PEER_LOCALMSPID=skcc
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/msp
+      - CORE_PEER_ADDRESS=skcc_peer1:7051
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=${COMPOSE_PROJECT_NAME}_poc
+      # - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      # - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=skcc_couchdb1:5984
+      # - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=
+      # - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=
+      # - CORE_OPERATIONS_LISTENADDRESS=skcc_peer1:9443
+      # - CORE_METRICS_PROVIDER=prometheus
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric
+    command: peer node start
+    ports:
+      - 7051:7051
+      - 7053:7053
+      # - 7443:9443
+    volumes:
+      - /var/run/:/host/var/run/
+      - ./crypto-config/peerOrganizations/skcc/peers/skcc_peer1/msp:/etc/hyperledger/msp
+      - ./crypto-config/peerOrganizations/skcc/peers/skcc_peer1/tls:/etc/hyperledger/tls
+      # - ./poc-network/skcc_peer1:/var/hyperledger/production
+    depends_on:
+      - chainz_orderer1
+      # - skcc_couchdb1
+    networks:
+      - poc
+
+  # skcc_couchdb1:
+  #   container_name: skcc_couchdb1
+  #   image: hyperledger/fabric-couchdb
+  #   environment:
+  #     - COUCHDB_USER=
+  #     - COUCHDB_PASSWORD=
+  #   ports:
+  #     - "5984:5984"
+  #   volumes:
+  #     - ./poc-network/skcc_couchdb1:/opt/couchdb/data
+  #   networks:
+  #     - poc
+
+  skcc_cli:
+    container_name: skcc_cli
+    image: hyperledger/fabric-tools
+    tty: true
+    environment:
+      - GOPATH=/opt/gopath
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - FABRIC_LOGGING_SPEC=info
+      - CORE_PEER_ID=skcc_cli
+      - CORE_PEER_ADDRESS=skcc_peer1:7051
+      - CORE_PEER_LOCALMSPID=skcc
+      - CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/skcc/users/Admin@skcc/msp
+      - CORE_CHAINCODE_KEEPALIVE=10
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+    command: /bin/bash
+    volumes:
+      - /var/run/:/host/var/run/
+      - ./chaincode/:/opt/gopath/src/github.com/chaincode
+      - ./crypto-config:/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/
+      - ./config:/opt/gopath/src/github.com/hyperledger/fabric/peer/channel-artifacts
+    networks:
+      - poc
+    depends_on:
+      - chainz_orderer1
+      - skcc_peer1
+
+  contractor1_peer1:
+    container_name: contractor1_peer1
+    image: hyperledger/fabric-peer
+    environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_PEER_ID=contractor1_peer1
+      - FABRIC_LOGGING_SPEC=info
+      - CORE_CHAINCODE_LOGGING_LEVEL=info
+      - CORE_PEER_LOCALMSPID=contractor1
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/msp
+      - CORE_PEER_ADDRESS=contractor1_peer1:7051
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=${COMPOSE_PROJECT_NAME}_poc
+      # - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      # - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=contractor1_couchdb1:5984
+      # - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=
+      # - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=
+      # - CORE_OPERATIONS_LISTENADDRESS=contractor1_peer1:9443
+      # - CORE_METRICS_PROVIDER=prometheus
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric
+    command: peer node start
+    ports:
+      - 9051:7051
+      - 9053:7053
+      # - 9443:9443
+    volumes:
+      - /var/run/:/host/var/run/
+      - ./crypto-config/peerOrganizations/contractor1/peers/contractor1_peer1/msp:/etc/hyperledger/msp
+      - ./crypto-config/peerOrganizations/contractor1/peers/contractor1_peer1/tls:/etc/hyperledger/tls
+      # - ./poc-network/contractor1_peer1:/var/hyperledger/production
+    depends_on:
+      - chainz_orderer1
+      # - contractor1_couchdb1
+    networks:
+      - poc
+
+#  contractor1_couchdb1:
+#    container_name: contractor1_couchdb1
+#    image: hyperledger/fabric-couchdb
+#    environment:
+#       - COUCHDB_USER=
+#       - COUCHDB_PASSWORD=
+#    ports:
+#     - "7984:5984"
+#    volumes:
+#     - ./poc-network/contractor1_couchdb1:/opt/couchdb/data
+#    networks:
+#     - poc
+
+  contractor1_cli:
+    container_name: contractor1_cli
+    image: hyperledger/fabric-tools
+    tty: true
+    environment:
+      - GOPATH=/opt/gopath
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - FABRIC_LOGGING_SPEC=info
+      - CORE_PEER_ID=contractor1_cli
+      - CORE_PEER_ADDRESS=contractor1_peer1:7051
+      - CORE_PEER_LOCALMSPID=contractor1
+      - CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/contractor1/users/Admin@contractor1/msp
+      - CORE_CHAINCODE_KEEPALIVE=10
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+    command: /bin/bash
+    volumes:
+      - /var/run/:/host/var/run/
+      - ./chaincode/:/opt/gopath/src/github.com/chaincode
+      - ./crypto-config:/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/
+      - ./config:/opt/gopath/src/github.com/hyperledger/fabric/peer/channel-artifacts
+    networks:
+      - poc
+    depends_on:
+      - chainz_orderer1
+      - contractor1_peer1
+
+#  prometheus:
+#    container_name: prometheus
+#    volumes:
+#      - ./prometheus/:/etc/prometheus/
+#    image: prom/prometheus
+#    command:
+#      - '--config.file=/etc/prometheus/prometheus.yml'
+#    ports:
+#      - 9090:9090
+#    networks:
+#      - poc
+
+#  grafana:
+#    container_name: grafana
+#    image: grafana/grafana
+#    environment:
+#      - GF_SECURITY_ADMIN_PASSWORD=pass
+#    depends_on:
+#      - prometheus
+#    ports:
+#      - "3000:3000"
+#    networks:
+#      - poc
