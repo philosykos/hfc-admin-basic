@@ -4,6 +4,7 @@ CHANNEL_NAME=skccchannel
 
 # remove config transactions
 rm -fr config/*
+mkdir config
 
 echo "===================== generate genesis block for orderer ====================="
 configtxgen -profile TwoOrgsSoloGenesis -outputBlock ./config/genesis.block

@@ -2,3 +2,4 @@
 .DS_Store
 crypto-config/*
 contractor2-config/crypto-config/*s
+config/*
