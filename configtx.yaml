@@ -8,15 +8,15 @@ Organizations:
         ID: skcc
         MSPDir: crypto-config/peerOrganizations/skcc/msp
         AnchorPeers:
-            - Host: skcc_peer2
-              Port: 8051
+            - Host: skcc_peer1
+              Port: 7051
     - &contractor1
         Name: contractor1
         ID: contractor1
         MSPDir: crypto-config/peerOrganizations/contractor1/msp
         AnchorPeers:
-            - Host: contractor1_peer2
-              Port: 11051
+            - Host: contractor1_peer1
+              Port: 10051
 
 Orderer: &solo
     OrdererType: solo
